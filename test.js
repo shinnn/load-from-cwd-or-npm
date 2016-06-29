@@ -1,19 +1,18 @@
-'use strict';
+'use strong';
 
-var assert = require('assert');
+const assert = require('assert');
 
-var loadFromCwdOrNpm = require('./');
-var npmCliDir = require('npm-cli-dir');
-var resolveFromNpm = require('resolve-from-npm');
-var test = require('tape');
+const loadFromCwdOrNpm = require('.');
+const npmCliDir = require('npm-cli-dir');
+const test = require('tape');
 
-test('loadFromCwdOrNpm()', function(t) {
+test('loadFromCwdOrNpm()', t => {
   t.plan(14);
 
   t.strictEqual(loadFromCwdOrNpm.name, 'loadFromCwdOrNpm', 'should have a function name.');
 
-  loadFromCwdOrNpm('read-package-json').then(function(readPkgJson) {
-    readPkgJson('./package.json', null, function(err, data) {
+  loadFromCwdOrNpm('read-package-json').then(readPkgJson => {
+    readPkgJson('./package.json', null, (err, data) => {
       assert.ifError(err);
       t.strictEqual(
         data.name,
@@ -23,11 +22,11 @@ test('loadFromCwdOrNpm()', function(t) {
     });
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('tape').then(function(tape) {
+  loadFromCwdOrNpm('tape').then(tape => {
     t.strictEqual(tape, test, 'should load the module from CWD when it only exists in CWD.');
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('request').then(function(request) {
+  loadFromCwdOrNpm('request').then(request => {
     t.strictEqual(
       request,
       require('request'),
@@ -35,7 +34,7 @@ test('loadFromCwdOrNpm()', function(t) {
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('osenv').then(function(osenv) {
+  loadFromCwdOrNpm('osenv').then(osenv => {
     // osenv v0.0.2 doesn't have .shell method.
     t.strictEqual(
       typeof osenv.shell,
@@ -44,22 +43,15 @@ test('loadFromCwdOrNpm()', function(t) {
     );
   }).catch(t.fail);
 
-  resolveFromNpm('./package.json').then(function(npmPackageJsonPath) {
-    /* istanbul ignore next */
-    if (require(npmPackageJsonPath).version.charAt(0) === '1') {
-      t.pass('(Skipping a test for scoped module loading since npm v1.x doesn\'t support it.)');
-    } else {
-      return loadFromCwdOrNpm('@shinnn/eslint-config-node-legacy').then(function(config) {
-        t.strictEqual(
-          config,
-          require('@shinnn/eslint-config-node-legacy'),
-          'should load the scoped module from CWD.'
-        );
-      });
-    }
+  loadFromCwdOrNpm('@shinnn/eslint-config-node').then(config => {
+    t.strictEqual(
+      config,
+      require('@shinnn/eslint-config-node'),
+      'should load the scoped module from CWD.'
+    );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('npm-registry-client').then(function(npmRegistryClient) {
+  loadFromCwdOrNpm('npm-registry-client').then(npmRegistryClient => {
     t.strictEqual(
       typeof npmRegistryClient,
       'function',
@@ -69,7 +61,7 @@ test('loadFromCwdOrNpm()', function(t) {
 
   loadFromCwdOrNpm('osenv', function alwaysReturnTrue() {
     return true;
-  }).then(function(osenv) {
+  }).then(osenv => {
     t.strictEqual(
       'shell' in osenv,
       false,
@@ -77,8 +69,8 @@ test('loadFromCwdOrNpm()', function(t) {
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('n').then(t.fail, function(err) {
-    return npmCliDir().then(function(dir) {
+  loadFromCwdOrNpm('n').then(t.fail, err => {
+    return npmCliDir().then(dir => {
       t.strictEqual(
         err.message,
         'Failed to load "n" module from the current working directory (' +
@@ -96,7 +88,7 @@ test('loadFromCwdOrNpm()', function(t) {
     });
   }).catch(t.fail);
 
-  loadFromCwdOrNpm(1).then(t.fail, function(err) {
+  loadFromCwdOrNpm(1).then(t.fail, err => {
     t.strictEqual(
       err.message,
       '1 is not a string. Expected a string of npm package name (e.g. `glob`, `graceful-fs`).',
@@ -104,7 +96,7 @@ test('loadFromCwdOrNpm()', function(t) {
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('./lib').then(t.fail, function(err) {
+  loadFromCwdOrNpm('./lib').then(t.fail, err => {
     t.strictEqual(
       err.message,
       '"./lib" includes path separator(s). The string must be an npm package name (e.g. `request`, `semver`).',
@@ -112,7 +104,7 @@ test('loadFromCwdOrNpm()', function(t) {
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('\\lib').then(t.fail, function(err) {
+  loadFromCwdOrNpm('\\lib').then(t.fail, err => {
     t.strictEqual(
       err.message,
       '"\\lib" includes path separator(s). The string must be an npm package name (e.g. `request`, `semver`).',
@@ -120,7 +112,7 @@ test('loadFromCwdOrNpm()', function(t) {
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('eslint', 1).then(t.fail, function(err) {
+  loadFromCwdOrNpm('eslint', 1).then(t.fail, err => {
     t.strictEqual(
       err.message,
       '1 is not a function. Expected a function to compare two package versions.',
