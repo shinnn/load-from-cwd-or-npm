@@ -62,7 +62,7 @@ If the module ins't included in the npm CLI dependencies but installed in CWD, i
 
 ```javascript
 // $ npm ls eslint
-// > └── eslint@1.10.3
+// > └── eslint@2.13.1
 
 // npm doesn't depend on `eslint` module.
 loadFromCwdOrNpm('eslint').then(eslint => {
