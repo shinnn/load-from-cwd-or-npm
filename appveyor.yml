@@ -1,9 +1,7 @@
 shallow_clone: true
-version: '{build}'
 skip_tags: true
 install:
   - ps: Install-Product node Stable
-  - npm uninstall --dave-dev @shinnn/eslint-config-node eslint istanbul tap-spec
   - npm install
 build: off
-test_script: node --strong_mode --throw-deprecation test.js
+test_script: node --throw-deprecation test.js

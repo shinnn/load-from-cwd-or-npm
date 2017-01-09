@@ -5,9 +5,9 @@
   "repository": "shinnn/load-from-cwd-or-npm",
   "author": "Shinnosuke Watanabe (https://github.com/shinnn)",
   "scripts": {
-    "test": "node --strong_mode --throw-deprecation test.js | tap-spec",
-    "coverage": "node --strong_mode --throw-deprecation node_modules/.bin/istanbul cover test.js"
     "pretest": "eslint --fix --format=codeframe index.js test.js",
+    "test": "node --throw-deprecation test.js | tap-spec",
+    "coverage": "istanbul cover test.js"
   },
   "license": "MIT",
   "files": [
