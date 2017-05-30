@@ -6,18 +6,22 @@
 
 const path = require('path');
 
+const inspectWithKind = require('inspect-with-kind');
 const npmCliDir = require('npm-cli-dir');
 const optional = require('optional');
 const resolveFromNpm = require('resolve-from-npm');
 
 const resolveSemverFromNpm = resolveFromNpm('semver');
 
+const MODULE_ID_ERROR = 'Expected a string of npm package name, for example `glob`, `graceful-fs`';
+
 module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
   if (typeof moduleId !== 'string') {
-    return Promise.reject(new TypeError(
-      String(moduleId) + ' is not a string. Expected a string of npm package name ' +
-      '(e.g. `glob`, `graceful-fs`).'
-    ));
+    return Promise.reject(new TypeError(`${MODULE_ID_ERROR}, but got ${inspectWithKind(moduleId)}.`));
+  }
+
+  if (moduleId.length === 0) {
+    return Promise.reject(new Error(`${MODULE_ID_ERROR}, but got '' (empty string).`));
   }
 
   if (moduleId.charAt(0) === '@') {
@@ -25,19 +29,22 @@ module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
   }
 
   if (moduleId.indexOf('/') !== -1 || moduleId.indexOf('\\') !== -1) {
-    return Promise.reject(new Error(
-      '"' + moduleId + '" includes path separator(s). The string must be an npm package name ' +
-      '(e.g. `request`, `semver`).'
-    ));
+    return Promise.reject(new Error(`"${
+      moduleId
+    }" includes path separator(s). The string must be an npm package name, for example \`request\` \`semver\`.`));
   }
 
   if (compareFn && typeof compareFn !== 'function') {
     return Promise.reject(new TypeError(
-      String(compareFn) + ' is not a function. Expected a function to compare two package versions.'
+      `Expected a function to compare two package versions, but got ${
+        inspectWithKind(compareFn)
+      }.`
     ));
   }
 
-  const tasks = [resolveFromNpm(moduleId + '/package.json')];
+  const modulePkgId = `${moduleId}/package.json`;
+  const tasks = [resolveFromNpm(modulePkgId)];
+
   if (!compareFn) {
     tasks.push(resolveSemverFromNpm);
   }
@@ -51,11 +58,9 @@ module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
       compareFn = require(results[1]).gte;
     }
 
-    if (compareFn(
-      (optional(moduleId + '/package.json') || {version: '0.0.0-0'}).version,
-      require(packageJsonPathFromNpm).version
-    )) {
+    if (compareFn((optional(modulePkgId) || {version: '0.0.0-0'}).version, require(packageJsonPathFromNpm).version)) {
       const result = optional(moduleId);
+
       if (result !== null) {
         return result;
       }
@@ -67,18 +72,16 @@ module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
 
     if (result === null) {
       return npmCliDir().then(npmCliDirPath => {
-        const err = new Error(
-          'Failed to load "' +
-          moduleId +
-          '" module from the current working directory (' +
-          cwd +
-          '). ' +
-          'Then tried to load "' +
-          moduleId +
-          '" from the npm CLI directory (' +
-          npmCliDirPath +
-          '), but it also failed.'
-        );
+        const err = new Error(`Failed to load "${
+          moduleId
+        }" module from the current working directory (${
+          cwd
+        }). Then tried to load "${
+          moduleId
+        }" from the npm CLI directory (${
+          npmCliDirPath
+        }), but it also failed. Install "${moduleId}" and try again. (\`npm install ${moduleId}\`)`);
+
         err.code = 'MODULE_NOT_FOUND';
 
         return Promise.reject(err);

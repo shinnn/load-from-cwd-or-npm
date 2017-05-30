@@ -1,21 +1,28 @@
-'use strong';
+'use strict';
 
 const assert = require('assert');
+const {join} = require('path');
 
 const loadFromCwdOrNpm = require('.');
 const npmCliDir = require('npm-cli-dir');
 const test = require('tape');
+const writeJsonFile = require('write-json-file');
 
-test('loadFromCwdOrNpm()', t => {
+test('loadFromCwdOrNpm()', async t => {
   t.plan(14);
 
-  t.strictEqual(loadFromCwdOrNpm.name, 'loadFromCwdOrNpm', 'should have a function name.');
+  await writeJsonFile(join(__dirname, 'node_modules', 'validate-npm-package-name', 'package.json'), {
+    name: 'validate-npm-package-name',
+    private: true,
+    version: '9007199254740991.0.0',
+    main: 'the/entry/point/file/does/not/exist'
+  });
 
   loadFromCwdOrNpm('read-package-json').then(readPkgJson => {
-    readPkgJson('./package.json', null, (err, data) => {
+    readPkgJson('./package.json', null, (err, {name}) => {
       assert.ifError(err);
       t.strictEqual(
-        data.name,
+        name,
         'load-from-cwd-or-npm',
         'should load the module from npm when it only exists in npm directory.'
       );
@@ -51,7 +58,7 @@ test('loadFromCwdOrNpm()', t => {
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('npm-registry-client').then(npmRegistryClient => {
+  loadFromCwdOrNpm('validate-npm-package-name').then(npmRegistryClient => {
     t.strictEqual(
       typeof npmRegistryClient,
       'function',
@@ -69,53 +76,62 @@ test('loadFromCwdOrNpm()', t => {
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('n').then(t.fail, err => {
+  loadFromCwdOrNpm('n').then(t.fail, ({code, message}) => {
     return npmCliDir().then(dir => {
       t.strictEqual(
-        err.message,
-        'Failed to load "n" module from the current working directory (' +
-        process.cwd() +
-        '). Then tried to load "n" from the npm CLI directory (' +
-        dir +
-        '), but it also failed.',
+        message,
+        `Failed to load "n" module from the current working directory (${
+          process.cwd()
+        }). Then tried to load "n" from the npm CLI directory (${
+          dir
+        }), but it also failed. Install "n" and try again. (\`npm install n\`)`,
         'should fail when it cannot find the module from either directories.'
       );
+
       t.strictEqual(
-        err.code,
+        code,
         'MODULE_NOT_FOUND',
         'should add MODULE_NOT_FOUND code to the error when it cannot find the module.'
       );
     });
   }).catch(t.fail);
 
-  loadFromCwdOrNpm(1).then(t.fail, err => {
+  loadFromCwdOrNpm(1).then(t.fail, ({message}) => {
     t.strictEqual(
-      err.message,
-      '1 is not a string. Expected a string of npm package name (e.g. `glob`, `graceful-fs`).',
+      message,
+      'Expected a string of npm package name, for example `glob`, `graceful-fs`, but got 1 (number).',
       'should fail when the first argument is not a string.'
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('./lib').then(t.fail, err => {
+  loadFromCwdOrNpm('').then(t.fail, ({message}) => {
     t.strictEqual(
-      err.message,
-      '"./lib" includes path separator(s). The string must be an npm package name (e.g. `request`, `semver`).',
+      message,
+     'Expected a string of npm package name, for example `glob`, `graceful-fs`, but got \'\' (empty string).',
+      'should fail when the first argument is an empty string.'
+    );
+  }).catch(t.fail);
+
+  loadFromCwdOrNpm('./lib').then(t.fail, ({message}) => {
+    t.strictEqual(
+      message,
+      '"./lib" includes path separator(s). The string must be an npm package name, for example `request` `semver`.',
       'should fail when the module ID includes `/`.'
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('\\lib').then(t.fail, err => {
+  loadFromCwdOrNpm('\\lib').then(t.fail, ({message}) => {
     t.strictEqual(
-      err.message,
-      '"\\lib" includes path separator(s). The string must be an npm package name (e.g. `request`, `semver`).',
+      message,
+      '"\\lib" includes path separator(s). The string must be an npm package name, for example `request` `semver`.',
       'should fail when the module ID includes `\\`.'
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('eslint', 1).then(t.fail, err => {
+  loadFromCwdOrNpm('eslint', new WeakMap()).then(t.fail, ({message}) => {
     t.strictEqual(
-      err.message,
-      '1 is not a function. Expected a function to compare two package versions.',
+      message,
+      'Expected a function to compare two package versions, but got WeakMap {}.',
       'should fail when it takes two arguments but the second is not a function.'
     );
   }).catch(t.fail);

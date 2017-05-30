@@ -4,22 +4,19 @@
 [![Build Status](https://travis-ci.org/shinnn/load-from-cwd-or-npm.svg?branch=master)](https://travis-ci.org/shinnn/load-from-cwd-or-npm)
 [![Build status](https://ci.appveyor.com/api/projects/status/fgiptpa87nh51g0v/branch/master?svg=true)](https://ci.appveyor.com/project/ShinnosukeWatanabe/load-from-cwd-or-npm/branch/master)
 [![Coverage Status](https://img.shields.io/coveralls/shinnn/load-from-cwd-or-npm.svg)](https://coveralls.io/github/shinnn/load-from-cwd-or-npm?branch=master)
-[![Dependency Status](https://david-dm.org/shinnn/load-from-cwd-or-npm.svg)](https://david-dm.org/shinnn/load-from-cwd-or-npm)
 
 Load a module from either CWD or [`npm` CLI](https://github.com/npm/npm) directory
 
 ```javascript
 const loadFromCwdOrNpm = require('load-from-cwd-or-npm');
 
-// $ npm ls npm-regustry-client
+// $ npm ls validate-npm-package-name
 // > └── (empty)
 
-loadFromCwdOrNpm('npm-regustry-client').then(RegClient => {
-  const client = new RegClient();
-  client.get('https://registry.npmjs.org/npm', {timeout: 1000}, (error, data, raw, res) => {
-    // ...
-  });
-});
+(async () => {
+  require('validate-npm-package-name'); // throws a `MODULE_NOT_FOUND` error
+  const RegistryClient = await loadFromCwdOrNpm('validate-npm-package-name'); // doesn't throw
+})();
 ```
 
 ## Installation
@@ -38,9 +35,9 @@ const loadFromCwdOrNpm = require('load-from-cwd-or-npm');
 
 ### loadFromCwdOrNpm(*moduleId*, [*compareFn*])
 
-*moduleId*: `String` (a module ID without path separators (`/`, `\\`))  
+*moduleId*: `string` (a module ID without path separators (`/`, `\\`))  
 *compareFn*: `Function` (a function to compare two package versions)  
-Return: `Object` (a [Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise) instance)
+Return: `Promise<any>`
 
 It loads a module with the given module ID from either of these two directories:
 
@@ -101,6 +98,6 @@ loadFromCwdOrNpm('rimraf', semver.lt);
 
 ## License
 
-Copyright (c) 2015 - 2016 [Shinnosuke Watanabe](https://github.com/shinnn)
+Copyright (c) 2015 - 2017 [Shinnosuke Watanabe](https://github.com/shinnn)
 
 Licensed under [the MIT License](./LICENSE).
