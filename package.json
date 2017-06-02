@@ -1,6 +1,6 @@
 {
   "name": "load-from-cwd-or-npm",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Load a module from either CWD or npm CLI directory",
   "repository": "shinnn/load-from-cwd-or-npm",
   "author": "Shinnosuke Watanabe (https://github.com/shinnn)",
@@ -37,7 +37,7 @@
   "devDependencies": {
     "@shinnn/eslint-config-node": "^3.0.0",
     "eslint": "^3.19.0",
-    "nyc": "^10.3.2",
+    "nyc": "^11.0.1",
     "osenv": "0.0.2",
     "request": "*",
     "tap-spec": "^4.1.1",
