@@ -9,7 +9,7 @@ const test = require('tape');
 const writeJsonFile = require('write-json-file');
 
 test('loadFromCwdOrNpm()', async t => {
-  t.plan(14);
+  t.plan(17);
 
   await writeJsonFile(join(__dirname, 'node_modules', 'validate-npm-package-name', 'package.json'), {
     name: 'validate-npm-package-name',
@@ -76,12 +76,12 @@ test('loadFromCwdOrNpm()', async t => {
     );
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('n').then(t.fail, ({code, message}) => {
+  loadFromCwdOrNpm('n').then(t.fail, ({code, id, message, triedPaths}) => {
     return npmCliDir().then(dir => {
       t.strictEqual(
         message,
         `Failed to load "n" module from the current working directory (${
-          process.cwd()
+          __dirname
         }). Then tried to load "n" from the npm CLI directory (${
           dir
         }), but it also failed. Install "n" and try again. (\`npm install n\`)`,
@@ -92,6 +92,20 @@ test('loadFromCwdOrNpm()', async t => {
         code,
         'MODULE_NOT_FOUND',
         'should add MODULE_NOT_FOUND code to the error when it cannot find the module.'
+      );
+
+      t.strictEqual(id, 'n', 'should include module ID as `id` property to the MODULE_NOT_FOUND error.');
+
+      t.strictEqual(
+        triedPaths.npm,
+        dir,
+        'should include the npm directory path to the MODULE_NOT_FOUND error.'
+      );
+
+      t.strictEqual(
+        triedPaths.cwd,
+        __dirname,
+        'should include the CWD path to the MODULE_NOT_FOUND error.'
       );
     });
   }).catch(t.fail);

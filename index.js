@@ -83,6 +83,11 @@ module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
         }), but it also failed. Install "${moduleId}" and try again. (\`npm install ${moduleId}\`)`);
 
         err.code = 'MODULE_NOT_FOUND';
+        err.id = moduleId;
+        err.triedPaths = {
+          cwd,
+          npm: npmCliDirPath
+        };
 
         return Promise.reject(err);
       });
