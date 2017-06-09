@@ -88,6 +88,7 @@ module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
           cwd,
           npm: npmCliDirPath
         };
+        err.npmVersion = require(path.join(npmCliDirPath, './package.json')).version;
 
         return Promise.reject(err);
       });
