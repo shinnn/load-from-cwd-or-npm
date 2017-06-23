@@ -3,14 +3,59 @@
 const assert = require('assert');
 const {join} = require('path');
 
-const loadFromCwdOrNpm = require('.');
-const npmCliDir = require('npm-cli-dir');
+const clearAllModules = require('clear-module').all;
 const parse = require('semver');
+const getPathKey = require('path-key');
 const test = require('tape');
 const writeJsonFile = require('write-json-file');
 
+const pathKey = getPathKey();
+const originalPath = process.env[pathKey];
+
+test('loadFromCwdOrNpm() on an environment where npm CLI is not installed', t => {
+  t.plan(5);
+  process.env[pathKey] = 'C:\\nothing\\exists';
+
+  const loadFromCwdOrNpm = require('.');
+
+  loadFromCwdOrNpm('resolve-from-npm').then(lib => {
+    t.equal(lib, require('resolve-from-npm'), 'should load module only from CWD.');
+  });
+
+  loadFromCwdOrNpm('pacote').catch(err => {
+    t.equal(
+      err.code,
+      'MODULE_NOT_FOUND',
+      'should add MODULE_NOT_FOUND code to the error when it cannot find the module.'
+    );
+
+    t.equal(
+      err.toString(),
+      `Error: Failed to load "pacote" module from the current working directory (${
+        process.cwd()
+      }). Install "pacote" and try again. (\`npm install pacote\`)`,
+      'should not include npm CLI directory path to the error message.'
+    );
+
+    t.notOk(
+      'npm' in err.triedPaths,
+      'should not add `.toriedPaths.npm` property to the error.'
+    );
+
+    t.notOk(
+      'npmVersion' in err,
+      'should not add `.npmVersion` property to the error.'
+    );
+  });
+});
+
 test('loadFromCwdOrNpm()', async t => {
   t.plan(18);
+  process.env[pathKey] = originalPath;
+  clearAllModules();
+
+  const loadFromCwdOrNpm = require('.');
+  const npmCliDir = require('npm-cli-dir');
 
   await writeJsonFile(join(__dirname, 'node_modules', 'validate-npm-package-name', 'package.json'), {
     name: 'validate-npm-package-name',
@@ -30,8 +75,8 @@ test('loadFromCwdOrNpm()', async t => {
     });
   }).catch(t.fail);
 
-  loadFromCwdOrNpm('tape').then(tape => {
-    t.equal(tape, test, 'should load the module from CWD when it only exists in CWD.');
+  loadFromCwdOrNpm('npm-cli-dir').then(lib => {
+    t.equal(lib, npmCliDir, 'should load the module from CWD when it only exists in CWD.');
   }).catch(t.fail);
 
   loadFromCwdOrNpm('request').then(request => {

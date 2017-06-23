@@ -11,9 +11,31 @@ const npmCliDir = require('npm-cli-dir');
 const optional = require('optional');
 const resolveFromNpm = require('resolve-from-npm');
 
+const MODULE_ID_ERROR = 'Expected a string of npm package name, for example `glob`, `graceful-fs`';
 const resolveSemverFromNpm = resolveFromNpm('semver');
 
-const MODULE_ID_ERROR = 'Expected a string of npm package name, for example `glob`, `graceful-fs`';
+function createModuleNotFoundRejection(moduleId, cwd, npmCliDirPath) {
+  const error = new Error(`Failed to load "${
+    moduleId
+  }" module from the current working directory (${
+    cwd
+  }).${npmCliDirPath ? ` Then tried to load "${
+    moduleId
+  }" from the npm CLI directory (${
+    npmCliDirPath
+  }), but it also failed.` : ''} Install "${moduleId}" and try again. (\`npm install ${moduleId}\`)`);
+
+  error.code = 'MODULE_NOT_FOUND';
+  error.id = moduleId;
+  error.triedPaths = {cwd};
+
+  if (npmCliDirPath) {
+    error.triedPaths.npm = npmCliDirPath;
+    error.npmVersion = require(path.join(npmCliDirPath, './package.json')).version;
+  }
+
+  return Promise.reject(error);
+}
 
 module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
   if (typeof moduleId !== 'string') {
@@ -72,25 +94,9 @@ module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
 
     if (result === null) {
       return npmCliDir().then(npmCliDirPath => {
-        const err = new Error(`Failed to load "${
-          moduleId
-        }" module from the current working directory (${
-          cwd
-        }). Then tried to load "${
-          moduleId
-        }" from the npm CLI directory (${
-          npmCliDirPath
-        }), but it also failed. Install "${moduleId}" and try again. (\`npm install ${moduleId}\`)`);
-
-        err.code = 'MODULE_NOT_FOUND';
-        err.id = moduleId;
-        err.triedPaths = {
-          cwd,
-          npm: npmCliDirPath
-        };
-        err.npmVersion = require(path.join(npmCliDirPath, './package.json')).version;
-
-        return Promise.reject(err);
+        return createModuleNotFoundRejection(moduleId, cwd, npmCliDirPath);
+      }, () => {
+        return createModuleNotFoundRejection(moduleId, cwd, null);
       });
     }
 
