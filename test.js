@@ -50,7 +50,7 @@ test('loadFromCwdOrNpm() on an environment where npm CLI is not installed', t =>
 });
 
 test('loadFromCwdOrNpm()', async t => {
-	t.plan(18);
+	t.plan(13);
 	process.env[pathKey] = originalPath;
 	clearAllModules();
 
@@ -159,44 +159,80 @@ test('loadFromCwdOrNpm()', async t => {
 			'should include the npm version to the MODULE_NOT_FOUND error.'
 		);
 	})).catch(t.fail);
+});
 
-	loadFromCwdOrNpm(1).then(t.fail, ({message}) => {
+test('Argument validation', async t => {
+	const loadFromCwdOrNpm = require('.');
+
+	try {
+		await loadFromCwdOrNpm(1);
+	} catch ({message}) {
 		t.equal(
 			message,
 			'Expected a string of npm package name, for example `glob`, `graceful-fs`, but got 1 (number).',
 			'should fail when the first argument is not a string.'
 		);
-	}).catch(t.fail);
+	}
 
-	loadFromCwdOrNpm('').then(t.fail, ({message}) => {
+	try {
+		await loadFromCwdOrNpm('');
+	} catch ({message}) {
 		t.equal(
 			message,
 			'Expected a string of npm package name, for example `glob`, `graceful-fs`, but got \'\' (empty string).',
 			'should fail when the first argument is an empty string.'
 		);
-	}).catch(t.fail);
+	}
 
-	loadFromCwdOrNpm('./lib').then(t.fail, ({message}) => {
+	try {
+		await loadFromCwdOrNpm('./lib');
+	} catch ({message}) {
 		t.equal(
 			message,
 			'"./lib" includes path separator(s). The string must be an npm package name, for example `request` `semver`.',
 			'should fail when the module ID includes `/`.'
 		);
-	}).catch(t.fail);
+	}
 
-	loadFromCwdOrNpm('\\lib').then(t.fail, ({message}) => {
+	try {
+		await loadFromCwdOrNpm('\\lib');
+	} catch ({message}) {
 		t.equal(
 			message,
 			'"\\lib" includes path separator(s). The string must be an npm package name, for example `request` `semver`.',
 			'should fail when the module ID includes `\\`.'
 		);
-	}).catch(t.fail);
+	}
 
-	loadFromCwdOrNpm('eslint', new Map()).then(t.fail, ({message}) => {
+	try {
+		await loadFromCwdOrNpm('eslint', new Map());
+	} catch ({message}) {
 		t.equal(
 			message,
 			'Expected a function to compare two package versions, but got Map {}.',
 			'should fail when it takes two arguments but the second is not a function.'
 		);
-	}).catch(t.fail);
+	}
+
+	try {
+		await loadFromCwdOrNpm();
+	} catch ({message}) {
+		t.equal(
+			message,
+			'Expected 1 or 2 arguments (<string>[, <Function>]), but got no arguments.',
+			'should fail when it takes no arguments.'
+		);
+	}
+
+	try {
+		await loadFromCwdOrNpm(0, 1, 2);
+	} catch ({message}) {
+		t.equal(
+			message,
+			'Expected 1 or 2 arguments (<string>[, <Function>]), but got 3 arguments.',
+			'should fail when it takes too many arguments.'
+		);
+	}
+
+	t.end();
 });

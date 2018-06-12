@@ -1,10 +1,6 @@
-/*!
- * load-from-cwd-or-npm | MIT (c) Shinnosuke Watanabe
- * https://github.com/shinnn/load-from-cwd-or-npm
-*/
 'use strict';
 
-const path = require('path');
+const {dirname, join} = require('path');
 
 const inspectWithKind = require('inspect-with-kind');
 const npmCliDir = require('npm-cli-dir');
@@ -31,13 +27,23 @@ function createModuleNotFoundRejection(moduleId, cwd, npmCliDirPath) {
 
 	if (npmCliDirPath) {
 		error.triedPaths.npm = npmCliDirPath;
-		error.npmVersion = require(path.join(npmCliDirPath, './package.json')).version;
+		error.npmVersion = require(join(npmCliDirPath, './package.json')).version;
 	}
 
 	return Promise.reject(error);
 }
 
-module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
+module.exports = function loadFromCwdOrNpm(...args) {
+	const argLen = args.length;
+
+	if (argLen !== 1 && argLen !== 2) {
+		return Promise.reject(new RangeError(`Expected 1 or 2 arguments (<string>[, <Function>]), but got ${
+			argLen === 0 ? 'no' : argLen
+		} arguments.`));
+	}
+
+	const [moduleId] = args;
+
 	if (typeof moduleId !== 'string') {
 		return Promise.reject(new TypeError(`${MODULE_ID_ERROR}, but got ${inspectWithKind(moduleId)}.`));
 	}
@@ -50,33 +56,30 @@ module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
 		return new Promise(resolve => resolve(require(moduleId)));
 	}
 
-	if (moduleId.indexOf('/') !== -1 || moduleId.indexOf('\\') !== -1) {
+	if (moduleId.includes('/') || moduleId.includes('\\')) {
 		return Promise.reject(new Error(`"${
 			moduleId
 		}" includes path separator(s). The string must be an npm package name, for example \`request\` \`semver\`.`));
 	}
 
-	if (compareFn && typeof compareFn !== 'function') {
-		return Promise.reject(new TypeError(`Expected a function to compare two package versions, but got ${
-			inspectWithKind(compareFn)
-		}.`));
-	}
-
+	const cwd = process.cwd();
 	const modulePkgId = `${moduleId}/package.json`;
-	const tasks = [resolveFromNpm(modulePkgId)];
+	const tasks = [];
 
-	if (!compareFn) {
+	if (argLen === 2) {
+		if (typeof args[1] !== 'function') {
+			return Promise.reject(new TypeError(`Expected a function to compare two package versions, but got ${
+				inspectWithKind(args[1])
+			}.`));
+		}
+	} else {
 		tasks.push(resolveSemverFromNpm);
 	}
 
-	const cwd = process.cwd();
+	tasks.unshift(resolveFromNpm(modulePkgId));
 
-	return Promise.all(tasks).then(function chooseOneModuleFromCwdAndNpm(results) {
-		const packageJsonPathFromNpm = results[0];
-
-		if (!compareFn) {
-			compareFn = require(results[1]).gte;
-		}
+	return Promise.all(tasks).then(([packageJsonPathFromNpm, semverPath]) => {
+		const compareFn = argLen === 2 ? args[1] : require(semverPath).gte;
 
 		if (compareFn((optional(modulePkgId) || {version: '0.0.0-0'}).version, require(packageJsonPathFromNpm).version)) {
 			const result = optional(moduleId);
@@ -86,14 +89,14 @@ module.exports = function loadFromCwdOrNpm(moduleId, compareFn) {
 			}
 		}
 
-		return require(path.dirname(packageJsonPathFromNpm));
-	}, function fallbackToCwd() {
-		const result = optional(moduleId);
+		return require(dirname(packageJsonPathFromNpm));
+	}, () => {
+		const modileFromCwd = optional(moduleId);
 
-		if (result === null) {
+		if (modileFromCwd === null) {
 			return npmCliDir().then(npmCliDirPath => createModuleNotFoundRejection(moduleId, cwd, npmCliDirPath), () => createModuleNotFoundRejection(moduleId, cwd, null));
 		}
 
-		return result;
+		return modileFromCwd;
 	});
 };
