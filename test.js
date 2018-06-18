@@ -1,59 +1,18 @@
 'use strict';
 
-const assert = require('assert');
 const {join} = require('path');
+const {promisify} = require('util');
 
 const clearAllModules = require('clear-module').all;
 const parse = require('semver');
 const getPathKey = require('path-key');
+const stubTrue = require('lodash/stubTrue');
 const test = require('tape');
 const writeJsonFile = require('write-json-file');
 
 const pathKey = getPathKey();
-const originalPath = process.env[pathKey];
-
-test('loadFromCwdOrNpm() on an environment where npm CLI is not installed', t => {
-	t.plan(5);
-	process.env[pathKey] = 'C:\\nothing\\exists';
-
-	const loadFromCwdOrNpm = require('.');
-
-	loadFromCwdOrNpm('resolve-from-npm').then(lib => {
-		t.equal(lib, require('resolve-from-npm'), 'should load module only from CWD.');
-	});
-
-	loadFromCwdOrNpm('pacote').catch(err => {
-		t.equal(
-			err.code,
-			'MODULE_NOT_FOUND',
-			'should add MODULE_NOT_FOUND code to the error when it cannot find the module.'
-		);
-
-		t.equal(
-			err.toString(),
-			`Error: Failed to load "pacote" module from the current working directory (${
-				process.cwd()
-			}). Install "pacote" and try again. (\`npm install pacote\`)`,
-			'should not include npm CLI directory path to the error message.'
-		);
-
-		t.notOk(
-			'npm' in err.triedPaths,
-			'should not add `.toriedPaths.npm` property to the error.'
-		);
-
-		t.notOk(
-			'npmVersion' in err,
-			'should not add `.npmVersion` property to the error.'
-		);
-	});
-});
 
 test('loadFromCwdOrNpm()', async t => {
-	t.plan(13);
-	process.env[pathKey] = originalPath;
-	clearAllModules();
-
 	const loadFromCwdOrNpm = require('.');
 	const npmCliDir = require('npm-cli-dir');
 
@@ -64,65 +23,55 @@ test('loadFromCwdOrNpm()', async t => {
 		main: 'the/entry/point/file/does/not/exist'
 	});
 
-	loadFromCwdOrNpm('read-package-json').then(readPkgJson => {
-		readPkgJson('./package.json', null, (err, {name}) => {
-			assert.ifError(err);
-			t.equal(
-				name,
-				'load-from-cwd-or-npm',
-				'should load the module from npm when it only exists in npm directory.'
-			);
-		});
-	}).catch(t.fail);
+	const readPkgJson = promisify(await loadFromCwdOrNpm('read-package-json'));
 
-	loadFromCwdOrNpm('npm-cli-dir').then(lib => {
-		t.equal(lib, npmCliDir, 'should load the module from CWD when it only exists in CWD.');
-	}).catch(t.fail);
+	t.equal(
+		(await readPkgJson('./package.json', null)).name,
+		'load-from-cwd-or-npm',
+		'should load the module from npm when it only exists in npm directory.'
+	);
 
-	loadFromCwdOrNpm('request').then(request => {
-		t.equal(
-			request,
-			require('request'),
-			'should load the module from CWD when it exists in both npm and CWD, and the CWD version is newer.'
-		);
-	}).catch(t.fail);
+	t.equal(
+		await loadFromCwdOrNpm('npm-cli-dir'),
+		npmCliDir,
+		'should load the module from CWD when it only exists in CWD.'
+	);
 
-	loadFromCwdOrNpm('osenv').then(osenv => {
-		// osenv v0.0.2 doesn't have .shell method.
-		t.equal(
-			typeof osenv.shell,
-			'function',
-			'should load the module from CWD when it exists in both npm and CWD, and the CWD version is older.'
-		);
-	}).catch(t.fail);
+	t.equal(
+		await loadFromCwdOrNpm('request'),
+		require('request'),
+		'should load the module from CWD when it exists in both npm and CWD, and the CWD version is newer.'
+	);
 
-	loadFromCwdOrNpm('@shinnn/eslint-config-node').then(config => {
-		t.equal(
-			config,
-			require('@shinnn/eslint-config-node'),
-			'should load the scoped module from CWD.'
-		);
-	}).catch(t.fail);
+	t.equal(
+		typeof (await loadFromCwdOrNpm('osenv')).shell,
+		'function',
+		'should load the module from CWD when it exists in both npm and CWD, and the CWD version is older.'
+	);
 
-	loadFromCwdOrNpm('validate-npm-package-name').then(npmRegistryClient => {
-		t.equal(
-			typeof npmRegistryClient,
-			'function',
-			'should load the module from npm when the CWD version exists but is corrupted.'
-		);
-	}).catch(t.fail);
+	t.equal(
+		await loadFromCwdOrNpm('@shinnn/eslint-config-node'),
+		require('@shinnn/eslint-config-node'),
+		'should load the scoped module from CWD.'
+	);
 
-	loadFromCwdOrNpm('osenv', function alwaysReturnTrue() {
-		return true;
-	}).then(osenv => {
-		t.equal(
-			'shell' in osenv,
-			false,
-			'should use custom comparison function when it takes the second argument.'
-		);
-	}).catch(t.fail);
+	t.equal(
+		typeof await loadFromCwdOrNpm('validate-npm-package-name'),
+		'function',
+		'should load the module from npm when the CWD version exists but is corrupted.'
+	);
 
-	loadFromCwdOrNpm('n').then(t.fail, ({code, id, message, npmVersion, triedPaths}) => npmCliDir().then(dir => {
+	t.equal(
+		'shell' in await loadFromCwdOrNpm('osenv', stubTrue),
+		false,
+		'should use custom comparison function when it takes the second argument.'
+	);
+
+	try {
+		await loadFromCwdOrNpm('n');
+	} catch ({code, id, message, npmVersion, triedPaths}) {
+		const dir = await npmCliDir();
+
 		t.equal(
 			message,
 			`Failed to load "n" module from the current working directory (${
@@ -158,7 +107,9 @@ test('loadFromCwdOrNpm()', async t => {
 			null,
 			'should include the npm version to the MODULE_NOT_FOUND error.'
 		);
-	})).catch(t.fail);
+	}
+
+	t.end();
 });
 
 test('Argument validation', async t => {
@@ -235,4 +186,48 @@ test('Argument validation', async t => {
 	}
 
 	t.end();
+});
+
+test('loadFromCwdOrNpm() on an environment where npm CLI is not installed', async t => {
+	t.plan(5);
+
+	clearAllModules();
+	process.env[pathKey] = 'C:\\nothing\\exists';
+	delete process.env.npm_execpath;
+
+	const loadFromCwdOrNpm = require('.');
+
+	t.equal(
+		await loadFromCwdOrNpm('resolve-from-npm'),
+		require('resolve-from-npm'),
+		'should load module only from CWD.'
+	);
+
+	try {
+		await loadFromCwdOrNpm('pacote');
+	} catch (err) {
+		t.equal(
+			err.code,
+			'MODULE_NOT_FOUND',
+			'should add MODULE_NOT_FOUND code to the error when it cannot find the module.'
+		);
+
+		t.equal(
+			err.toString(),
+			`Error: Failed to load "pacote" module from the current working directory (${
+				process.cwd()
+			}). Install "pacote" and try again. (\`npm install pacote\`)`,
+			'should not include npm CLI directory path to the error message.'
+		);
+
+		t.notOk(
+			'npm' in err.triedPaths,
+			'should not add `.toriedPaths.npm` property to the error.'
+		);
+
+		t.notOk(
+			'npmVersion' in err,
+			'should not add `.npmVersion` property to the error.'
+		);
+	}
 });
