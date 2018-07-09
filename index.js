@@ -1,13 +1,13 @@
 'use strict';
 
-const {dirname, join} = require('path');
+const {dirname, isAbsolute, join} = require('path');
 
 const inspectWithKind = require('inspect-with-kind');
 const npmCliDir = require('npm-cli-dir');
 const optional = require('optional');
 const resolveFromNpm = require('resolve-from-npm');
 
-const MODULE_ID_ERROR = 'Expected a string of npm package name, for example `glob`, `graceful-fs`';
+const MODULE_ID_ERROR = 'Expected a module ID (<string>), for example `glob` and `semver`, to resolve from either npm directory or the current working directory';
 const resolveSemverFromNpm = resolveFromNpm('semver');
 
 module.exports = async function loadFromCwdOrNpm(...args) {
@@ -22,7 +22,7 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 	const [moduleId] = args;
 
 	if (typeof moduleId !== 'string') {
-		throw new TypeError(`${MODULE_ID_ERROR}, but got ${inspectWithKind(moduleId)}.`);
+		throw new TypeError(`${MODULE_ID_ERROR}, but got a non-string value ${inspectWithKind(moduleId)}.`);
 	}
 
 	if (moduleId.length === 0) {
@@ -33,10 +33,14 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 		return require(moduleId);
 	}
 
-	if (moduleId.includes('/') || moduleId.includes('\\')) {
-		throw new Error(`"${
+	if (isAbsolute(moduleId)) {
+		const error = new Error(`${MODULE_ID_ERROR}, but got an absolute path '${
 			moduleId
-		}" includes path separator(s). The string must be an npm package name, for example \`request\` \`semver\`.`);
+		}'. For absolute paths there is no need to use \`load-from-cwd-or-npm\` in favor of Node.js built-in \`require.resolve()\`.`);
+
+		error.code = 'ERR_ABSOLUTE_MODULE_ID';
+
+		throw error;
 	}
 
 	const cwd = process.cwd();

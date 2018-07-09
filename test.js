@@ -120,7 +120,7 @@ test('Argument validation', async t => {
 	} catch ({message}) {
 		t.equal(
 			message,
-			'Expected a string of npm package name, for example `glob`, `graceful-fs`, but got 1 (number).',
+			'Expected a module ID (<string>), for example `glob` and `semver`, to resolve from either npm directory or the current working directory, but got a non-string value 1 (number).',
 			'should fail when the first argument is not a string.'
 		);
 	}
@@ -130,28 +130,17 @@ test('Argument validation', async t => {
 	} catch ({message}) {
 		t.equal(
 			message,
-			'Expected a string of npm package name, for example `glob`, `graceful-fs`, but got \'\' (empty string).',
+			'Expected a module ID (<string>), for example `glob` and `semver`, to resolve from either npm directory or the current working directory, but got \'\' (empty string).',
 			'should fail when the first argument is an empty string.'
 		);
 	}
 
 	try {
-		await loadFromCwdOrNpm('./lib');
+		await loadFromCwdOrNpm(__dirname);
 	} catch ({message}) {
-		t.equal(
-			message,
-			'"./lib" includes path separator(s). The string must be an npm package name, for example `request` `semver`.',
+		t.ok(
+			message.includes(`but got an absolute path '${__dirname}'.`),
 			'should fail when the module ID includes `/`.'
-		);
-	}
-
-	try {
-		await loadFromCwdOrNpm('\\lib');
-	} catch ({message}) {
-		t.equal(
-			message,
-			'"\\lib" includes path separator(s). The string must be an npm package name, for example `request` `semver`.',
-			'should fail when the module ID includes `\\`.'
 		);
 	}
 
