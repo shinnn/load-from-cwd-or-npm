@@ -4,11 +4,11 @@
 	"description": "Load a module from either CWD or npm CLI directory",
 	"repository": "shinnn/load-from-cwd-or-npm",
 	"author": "Shinnosuke Watanabe (https://github.com/shinnn)",
+	"license": "ISC",
 	"scripts": {
 		"pretest": "eslint .",
-		"test": "nyc --reporter=html --reporter=text node test.js"
+		"test": "nyc node test.js"
 	},
-	"license": "ISC",
 	"files": [
 		"index.js"
 	],
@@ -29,25 +29,30 @@
 		"then"
 	],
 	"dependencies": {
-		"inspect-with-kind": "^1.0.4",
-		"npm-cli-dir": "^3.0.0",
+		"inspect-with-kind": "^1.0.5",
+		"npm-cli-dir": "^3.0.1",
 		"optional": "^0.1.4",
 		"resolve-from-npm": "^3.1.0"
 	},
 	"devDependencies": {
-		"@shinnn/eslint-config-node": "^6.0.0",
-		"clear-module": "^2.1.0",
-		"eslint": "^5.1.0",
-		"lodash": "^4.17.10",
-		"nyc": "^12.0.2",
+		"@babel/code-frame": "^7.0.0",
+		"@shinnn/eslint-config": "^6.8.4",
+		"clear-module": "^3.0.0",
+		"eslint": "^5.10.0",
+		"lodash": "^4.17.11",
+		"nyc": "^13.1.0",
+		"nyc-config-common": "^1.0.1",
 		"osenv": "0.0.2",
 		"path-key": "^2.0.1",
 		"request": "*",
-		"semver": "^5.5.0",
+		"semver": "^5.6.0",
 		"tape": "^4.9.1",
-		"write-json-file": "^2.3.0"
+		"write-json-file": "^3.0.2"
 	},
 	"eslintConfig": {
-		"extends": "@shinnn/node"
+		"extends": "@shinnn"
+	},
+	"nyc": {
+		"extends": "nyc-config-common"
 	}
 }

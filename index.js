@@ -72,7 +72,7 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 		}
 
 		return require(dirname(packageJsonPathFromNpm));
-	} catch (err) {
+	} catch (_) {
 		const modileFromCwd = optional(moduleId);
 
 		if (modileFromCwd === null) {
@@ -80,7 +80,7 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 
 			try {
 				npmCliDirPath = await npmCliDir();
-			} catch (npmCliDirErr) {}
+			} catch (err) {} // eslint-disable-line no-unused-vars
 
 			const error = new Error(`Failed to load "${
 				moduleId

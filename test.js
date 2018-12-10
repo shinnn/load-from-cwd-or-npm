@@ -50,8 +50,8 @@ test('loadFromCwdOrNpm()', async t => {
 	);
 
 	t.equal(
-		await loadFromCwdOrNpm('@shinnn/eslint-config-node'),
-		require('@shinnn/eslint-config-node'),
+		await loadFromCwdOrNpm('@babel/code-frame'),
+		require('@babel/code-frame'),
 		'should load the scoped module from CWD.'
 	);
 
