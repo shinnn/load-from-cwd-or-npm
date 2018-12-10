@@ -1,11 +1,10 @@
 # load-from-cwd-or-npm
 
 [![npm version](https://img.shields.io/npm/v/load-from-cwd-or-npm.svg)](https://www.npmjs.com/package/load-from-cwd-or-npm)
-[![Build Status](https://travis-ci.org/shinnn/load-from-cwd-or-npm.svg?branch=master)](https://travis-ci.org/shinnn/load-from-cwd-or-npm)
-[![Build status](https://ci.appveyor.com/api/projects/status/fgiptpa87nh51g0v/branch/master?svg=true)](https://ci.appveyor.com/project/ShinnosukeWatanabe/load-from-cwd-or-npm/branch/master)
+[![Build Status](https://travis-ci.com/shinnn/load-from-cwd-or-npm.svg?branch=master)](https://travis-ci.com/shinnn/load-from-cwd-or-npm)
 [![Coverage Status](https://img.shields.io/coveralls/shinnn/load-from-cwd-or-npm.svg)](https://coveralls.io/github/shinnn/load-from-cwd-or-npm?branch=master)
 
-Load a module from either CWD or [`npm` CLI](https://github.com/npm/npm) directory
+Load a module from either CWD or [`npm` CLI](https://github.com/npm/cli) directory
 
 ```javascript
 const loadFromCwdOrNpm = require('load-from-cwd-or-npm');
@@ -21,7 +20,7 @@ const loadFromCwdOrNpm = require('load-from-cwd-or-npm');
 
 ## Installation
 
-[Use](https://docs.npmjs.com/cli/install) [npm](https://docs.npmjs.com/getting-started/what-is-npm).
+[Use](https://docs.npmjs.com/cli/install) [npm](https://docs.npmjs.com/about-npm/).
 
 ```
 npm install load-from-cwd-or-npm
