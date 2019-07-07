@@ -32,10 +32,9 @@ npm install load-from-cwd-or-npm
 const loadFromCwdOrNpm = require('load-from-cwd-or-npm');
 ```
 
-### loadFromCwdOrNpm(*moduleId*, [*compareFn*])
+### loadFromCwdOrNpm(*moduleId*)
 
 *moduleId*: `string` (a module ID without path separators (`/`, `\\`))  
-*compareFn*: `Function` (a function to compare two package versions)  
 Return: `Promise<any>`
 
 It loads a module with the given module ID from either of these two directories:
@@ -79,22 +78,6 @@ If the module exists in both directories, it compares their [package versions](h
 ```
 
 The returned promise will be [fulfilled](http://promisesaplus.com/#point-26) with the loaded module, or [rejected](http://promisesaplus.com/#point-30) when it fails to find the module from either directories.
-
-#### compareFn(*cwdPackageVersion*, *npmPackageVersion*)
-
-Default: [node-semver](https://github.com/npm/node-semver)'s [`gte`](https://github.com/npm/node-semver#comparison) method
-
-Used as a comparison function when a module with the given ID exists in both directories.
-
-It takes two `string` arguments, package versions of the CWD one and the npm dependency one. the former will be loaded when `compareFn` returns `true`, otherwise the latter will be loaded.
-
-```javascript
-const loadFromCwdOrNpm = require('load-from-cwd-or-npm');
-const semver = require('semver');
-
-loadFromCwdOrNpm('rimraf', semver.lt);
-// inverse to the default behavior (the older will be loaded)
-```
 
 ## License
 

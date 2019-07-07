@@ -43,6 +43,8 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 				inspectWithKind(args[1])
 			}.`);
 		}
+
+		console.error('The second parameter of `load-from-cwd-or-npm` is deprecated and will be removed in the next major version.');
 	} else {
 		tasks.push(resolveSemverFromNpm);
 	}
