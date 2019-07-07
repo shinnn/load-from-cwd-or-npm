@@ -4,24 +4,17 @@ const {join} = require('path');
 const {promisify} = require('util');
 
 const clearAllModules = require('clear-module').all;
+const outputFile = require('output-file');
 const parse = require('semver');
 const getPathKey = require('path-key');
 const stubTrue = require('lodash/stubTrue');
 const test = require('tape');
-const writeJsonFile = require('write-json-file');
 
 const pathKey = getPathKey();
 
 test('loadFromCwdOrNpm()', async t => {
 	const loadFromCwdOrNpm = require('.');
 	const npmCliDir = require('npm-cli-dir');
-
-	await writeJsonFile(join(__dirname, 'node_modules', 'validate-npm-package-name', 'package.json'), {
-		name: 'validate-npm-package-name',
-		private: true,
-		version: '9007199254740991.0.0',
-		main: 'the/entry/point/file/does/not/exist'
-	});
 
 	const readPkgJson = promisify(await loadFromCwdOrNpm('read-package-json'));
 
@@ -55,6 +48,14 @@ test('loadFromCwdOrNpm()', async t => {
 		'should load the scoped module from CWD.'
 	);
 
+	await outputFile(join(__dirname, 'node_modules/validate-npm-package-name/package.json'), `{
+	"name": "validate-npm-package-name",
+	"private": true,
+	"version": "9007199254740991.0.0",
+	"main": "the/entry/point/file/does/not/exist"
+}
+`);
+
 	t.equal(
 		typeof await loadFromCwdOrNpm('validate-npm-package-name'),
 		'function',
@@ -69,6 +70,7 @@ test('loadFromCwdOrNpm()', async t => {
 
 	try {
 		await loadFromCwdOrNpm('n');
+		t.fail('Unexpectedly succeeded.');
 	} catch ({code, id, message, npmVersion, triedPaths}) {
 		const dir = await npmCliDir();
 
@@ -117,6 +119,7 @@ test('Argument validation', async t => {
 
 	try {
 		await loadFromCwdOrNpm(1);
+		t.fail('Unexpectedly succeeded.');
 	} catch ({message}) {
 		t.equal(
 			message,
@@ -127,6 +130,7 @@ test('Argument validation', async t => {
 
 	try {
 		await loadFromCwdOrNpm('');
+		t.fail('Unexpectedly succeeded.');
 	} catch ({message}) {
 		t.equal(
 			message,
@@ -137,6 +141,7 @@ test('Argument validation', async t => {
 
 	try {
 		await loadFromCwdOrNpm(__dirname);
+		t.fail('Unexpectedly succeeded.');
 	} catch ({message}) {
 		t.ok(
 			message.includes(`but got an absolute path '${__dirname}'.`),
@@ -146,6 +151,7 @@ test('Argument validation', async t => {
 
 	try {
 		await loadFromCwdOrNpm('eslint', new Map());
+		t.fail('Unexpectedly succeeded.');
 	} catch ({message}) {
 		t.equal(
 			message,
@@ -156,6 +162,7 @@ test('Argument validation', async t => {
 
 	try {
 		await loadFromCwdOrNpm();
+		t.fail('Unexpectedly succeeded.');
 	} catch ({message}) {
 		t.equal(
 			message,
@@ -166,6 +173,7 @@ test('Argument validation', async t => {
 
 	try {
 		await loadFromCwdOrNpm(0, 1, 2);
+		t.fail('Unexpectedly succeeded.');
 	} catch ({message}) {
 		t.equal(
 			message,
@@ -194,6 +202,7 @@ test('loadFromCwdOrNpm() on an environment where npm CLI is not installed', asyn
 
 	try {
 		await loadFromCwdOrNpm('pacote');
+		t.fail('Unexpectedly succeeded.');
 	} catch (err) {
 		t.equal(
 			err.code,

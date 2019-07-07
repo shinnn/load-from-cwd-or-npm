@@ -1,6 +1,6 @@
 'use strict';
 
-const {dirname, isAbsolute, join} = require('path');
+const {dirname, join} = require('path');
 
 const inspectWithKind = require('inspect-with-kind');
 const npmCliDir = require('npm-cli-dir');
@@ -33,16 +33,6 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 		return require(moduleId);
 	}
 
-	if (isAbsolute(moduleId)) {
-		const error = new Error(`${MODULE_ID_ERROR}, but got an absolute path '${
-			moduleId
-		}'. For absolute paths there is no need to use \`load-from-cwd-or-npm\` in favor of Node.js built-in \`require.resolve()\`.`);
-
-		error.code = 'ERR_ABSOLUTE_MODULE_ID';
-
-		throw error;
-	}
-
 	const cwd = process.cwd();
 	const modulePkgId = `${moduleId}/package.json`;
 	const tasks = [];
@@ -72,7 +62,15 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 		}
 
 		return require(dirname(packageJsonPathFromNpm));
-	} catch (_) {
+	} catch (err) {
+		if (err.code === 'ERR_ABSOLUTE_MODULE_ID') {
+			err.message = `${MODULE_ID_ERROR}, but got an absolute path '${
+				moduleId
+			}'. For absolute paths there is no need to use \`load-from-cwd-or-npm\` in favor of Node.js built-in \`require.resolve()\`.`;
+
+			throw err;
+		}
+
 		const modileFromCwd = optional(moduleId);
 
 		if (modileFromCwd === null) {
@@ -80,7 +78,7 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 
 			try {
 				npmCliDirPath = await npmCliDir();
-			} catch (err) {} // eslint-disable-line no-unused-vars
+			} catch (errUnused) {} // eslint-disable-line no-unused-vars
 
 			const error = new Error(`Failed to load "${
 				moduleId
