@@ -1,6 +1,6 @@
 {
 	"name": "load-from-cwd-or-npm",
-	"version": "3.0.1",
+	"version": "3.0.2",
 	"description": "Load a module from either CWD or npm CLI directory",
 	"repository": "shinnn/load-from-cwd-or-npm",
 	"author": "Shinnosuke Watanabe (https://github.com/shinnn)",
