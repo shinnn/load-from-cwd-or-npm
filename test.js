@@ -7,7 +7,6 @@ const clearAllModules = require('clear-module').all;
 const outputFile = require('output-file');
 const parse = require('semver');
 const getPathKey = require('path-key');
-const stubTrue = require('lodash/stubTrue');
 const test = require('tape');
 
 const pathKey = getPathKey();
@@ -60,12 +59,6 @@ test('loadFromCwdOrNpm()', async t => {
 		typeof await loadFromCwdOrNpm('validate-npm-package-name'),
 		'function',
 		'should load the module from npm when the CWD version exists but is corrupted.'
-	);
-
-	t.equal(
-		'shell' in await loadFromCwdOrNpm('osenv', stubTrue),
-		false,
-		'should use custom comparison function when it takes the second argument.'
 	);
 
 	try {
@@ -150,34 +143,23 @@ test('Argument validation', async t => {
 	}
 
 	try {
-		await loadFromCwdOrNpm('eslint', new Map());
-		t.fail('Unexpectedly succeeded.');
-	} catch ({message}) {
-		t.equal(
-			message,
-			'Expected a function to compare two package versions, but got Map {}.',
-			'should fail when it takes two arguments but the second is not a function.'
-		);
-	}
-
-	try {
 		await loadFromCwdOrNpm();
 		t.fail('Unexpectedly succeeded.');
 	} catch ({message}) {
 		t.equal(
 			message,
-			'Expected 1 or 2 arguments (<string>[, <Function>]), but got no arguments.',
+			'Expected 1 argument (<string>), but got no arguments.',
 			'should fail when it takes no arguments.'
 		);
 	}
 
 	try {
-		await loadFromCwdOrNpm(0, 1, 2);
+		await loadFromCwdOrNpm(0, 1);
 		t.fail('Unexpectedly succeeded.');
 	} catch ({message}) {
 		t.equal(
 			message,
-			'Expected 1 or 2 arguments (<string>[, <Function>]), but got 3 arguments.',
+			'Expected 1 argument (<string>), but got 2 arguments.',
 			'should fail when it takes too many arguments.'
 		);
 	}

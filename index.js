@@ -13,8 +13,8 @@ const resolveSemverFromNpm = resolveFromNpm('semver');
 module.exports = async function loadFromCwdOrNpm(...args) {
 	const argLen = args.length;
 
-	if (argLen !== 1 && argLen !== 2) {
-		throw new RangeError(`Expected 1 or 2 arguments (<string>[, <Function>]), but got ${
+	if (argLen !== 1) {
+		throw new RangeError(`Expected 1 argument (<string>), but got ${
 			argLen === 0 ? 'no' : argLen
 		} arguments.`);
 	}
@@ -35,25 +35,10 @@ module.exports = async function loadFromCwdOrNpm(...args) {
 
 	const cwd = process.cwd();
 	const modulePkgId = `${moduleId}/package.json`;
-	const tasks = [];
-
-	if (argLen === 2) {
-		if (typeof args[1] !== 'function') {
-			throw new TypeError(`Expected a function to compare two package versions, but got ${
-				inspectWithKind(args[1])
-			}.`);
-		}
-
-		console.error('The second parameter of `load-from-cwd-or-npm` is deprecated and will be removed in the next major version.');
-	} else {
-		tasks.push(resolveSemverFromNpm);
-	}
-
-	tasks.unshift(resolveFromNpm(modulePkgId));
 
 	try {
-		const [packageJsonPathFromNpm, semverPath] = await Promise.all(tasks);
-		const compareFn = argLen === 2 ? args[1] : require(semverPath).gte;
+		const [packageJsonPathFromNpm, semverPath] = await Promise.all([resolveFromNpm(modulePkgId), resolveSemverFromNpm]);
+		const compareFn = require(semverPath).gte;
 
 		if (compareFn((optional(modulePkgId) || {version: '0.0.0-0'}).version, require(packageJsonPathFromNpm).version)) {
 			const result = optional(moduleId);
